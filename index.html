@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ferge.io Cheat Menu</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+        #container {
+            display: flex;
+            height: 100%;
+        }
+        #cheat-menu {
+            width: 200px;
+            background-color: #333;
+            color: white;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        #game-frame {
+            flex: 1;
+            border: none;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #555;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #777;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="cheat-menu">
+            <h2>Cheat Menu</h2>
+            <button onclick="toggleGodMode()">Toggle God Mode</button>
+            <button onclick="addCoins()">Add Coins</button>
+            <button onclick="unlockAll()">Unlock All</button>
+            <!-- Add more buttons as needed -->
+        </div>
+        <iframe id="game-frame" src="https://ferge.io" frameborder="0"></iframe>
+    </div>
+
+    <script>
+        // Example cheat functions
+        function toggleGodMode() {
+            // Implement your cheat logic here
+            console.log("God Mode Toggled");
+        }
+
+        function addCoins() {
+            // Implement your cheat logic here
+            console.log("Coins Added");
+        }
+
+        function unlockAll() {
+            // Implement your cheat logic here
+            console.log("All Unlocked");
+        }
+
+        // Add more cheat functions as needed
+    </script>
+</body>
+</html>

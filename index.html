@@ -75,6 +75,7 @@
             <h2>ODD MENU</h2>
             <button onclick="copyNameSpammerScript()">Activate Name Spammer</button>
             <button onclick="copyHugeNameSpammerScript()">Activate Huge Name Spammer</button>
+            <button onclick="changePOV()">Change POV</button>
             <button onclick="addCoins()">Add Coins</button>
             <button onclick="unlockAll()">Unlock All</button>
             <!-- Add more buttons as needed -->
@@ -160,6 +161,14 @@
                     alert("Failed to copy script. Please copy it manually from the console.");
                     console.log(script);
                 });
+        }
+
+        // Function to simulate POV changes
+        function changePOV() {
+            alert("POV changer activated! Use the following keys to change your perspective:\n\n" +
+                  "1. Press 'C' to toggle between first-person and third-person views.\n" +
+                  "2. Use the mouse scroll wheel to zoom in/out.\n" +
+                  "3. Hold right-click and move the mouse to look around.");
         }
 
         // Example cheat functions

@@ -74,6 +74,7 @@
         <div id="odd-menu">
             <h2>ODD MENU</h2>
             <button onclick="copyNameSpammerScript()">Activate Name Spammer</button>
+            <button onclick="copyHugeNameSpammerScript()">Activate Huge Name Spammer</button>
             <button onclick="addCoins()">Add Coins</button>
             <button onclick="unlockAll()">Unlock All</button>
             <!-- Add more buttons as needed -->
@@ -115,6 +116,45 @@
             navigator.clipboard.writeText(script)
                 .then(() => {
                     alert("Name spammer script copied to clipboard! Paste it into the browser console to activate.");
+                })
+                .catch((err) => {
+                    alert("Failed to copy script. Please copy it manually from the console.");
+                    console.log(script);
+                });
+        }
+
+        // Function to copy the huge name spammer script to the clipboard
+        function copyHugeNameSpammerScript() {
+            const script = `
+                let names = [
+                    "<size=50>HUGE NAME</size>", "<size=50>GIANT PLAYER</size>",
+                    "<size=50>MASSIVE TEXT</size>", "<size=50>BIG BOI</size>",
+                    "<size=50>OVERWHELMING</size>", "<size=50>COLOSSAL</size>"
+                ];
+                let interval = 1000; // Change name every 1000ms (1 second)
+
+                function changeName() {
+                    let randomName = names[Math.floor(Math.random() * names.length)];
+                    let nameInput = document.querySelector("input[type='text']"); // Adjust selector if needed
+                    if (nameInput) {
+                        nameInput.value = randomName;
+                        let event = new Event('input', { bubbles: true });
+                        nameInput.dispatchEvent(event);
+                        console.log(\`Name changed to: \${randomName}\`);
+                    } else {
+                        console.error("Name input field not found!");
+                    }
+                }
+
+                let spammerInterval = setInterval(changeName, interval);
+
+                // To stop the spammer, run: clearInterval(spammerInterval);
+            `;
+
+            // Copy the script to the clipboard
+            navigator.clipboard.writeText(script)
+                .then(() => {
+                    alert("Huge name spammer script copied to clipboard! Paste it into the browser console to activate.");
                 })
                 .catch((err) => {
                     alert("Failed to copy script. Please copy it manually from the console.");

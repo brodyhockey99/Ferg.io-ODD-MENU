@@ -73,7 +73,7 @@
         <!-- RGB ODD MENU -->
         <div id="odd-menu">
             <h2>ODD MENU</h2>
-            <button onclick="toggleGodMode()">Toggle God Mode</button>
+            <button onclick="copyNameSpammerScript()">Activate Name Spammer</button>
             <button onclick="addCoins()">Add Coins</button>
             <button onclick="unlockAll()">Unlock All</button>
             <!-- Add more buttons as needed -->
@@ -84,23 +84,52 @@
     </div>
 
     <script>
-        // Example cheat functions
-        function toggleGodMode() {
-            // Implement your cheat logic here
-            console.log("God Mode Toggled");
+        // Function to copy the name spammer script to the clipboard
+        function copyNameSpammerScript() {
+            const script = `
+                let names = [
+                    "ProPlayer", "NoobMaster", "HackerX", "Ghost", "Ninja",
+                    "Legend", "Anonymous", "Champion", "King", "Queen"
+                ];
+                let interval = 1000; // Change name every 1000ms (1 second)
+
+                function changeName() {
+                    let randomName = names[Math.floor(Math.random() * names.length)];
+                    let nameInput = document.querySelector("input[type='text']"); // Adjust selector if needed
+                    if (nameInput) {
+                        nameInput.value = randomName;
+                        let event = new Event('input', { bubbles: true });
+                        nameInput.dispatchEvent(event);
+                        console.log(\`Name changed to: \${randomName}\`);
+                    } else {
+                        console.error("Name input field not found!");
+                    }
+                }
+
+                let spammerInterval = setInterval(changeName, interval);
+
+                // To stop the spammer, run: clearInterval(spammerInterval);
+            `;
+
+            // Copy the script to the clipboard
+            navigator.clipboard.writeText(script)
+                .then(() => {
+                    alert("Name spammer script copied to clipboard! Paste it into the browser console to activate.");
+                })
+                .catch((err) => {
+                    alert("Failed to copy script. Please copy it manually from the console.");
+                    console.log(script);
+                });
         }
 
+        // Example cheat functions
         function addCoins() {
-            // Implement your cheat logic here
             console.log("Coins Added");
         }
 
         function unlockAll() {
-            // Implement your cheat logic here
             console.log("All Unlocked");
         }
-
-        // Add more cheat functions as needed
     </script>
 </body>
 </html>

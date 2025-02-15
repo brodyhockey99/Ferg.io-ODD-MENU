@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ferge.io with User Script</title>
+  <title>Venge.io with User Script</title>
   <style>
     body, html {
       margin: 0;
@@ -20,17 +20,17 @@
   </style>
 </head>
 <body>
-  <!-- Ferge.io Game -->
-  <iframe src="https://ferge.io" id="ferge-iframe"></iframe>
+  <!-- Venge.io Game -->
+  <iframe src="https://venge.io" id="venge-iframe"></iframe>
 
   <!-- Your User Script -->
   <script>
     // Wait for the iframe to load
-    document.getElementById('ferge-iframe').onload = function() {
+    document.getElementById('venge-iframe').onload = function() {
       // Inject your user script into the iframe
       var script = document.createElement('script');
-      script.src = 'https://your-username.github.io/ferge-io-script/script.js'; // Replace with your script URL
-      document.getElementById('ferge-iframe').contentDocument.head.appendChild(script);
+      script.src = 'https://your-username.github.io/venge-io-script/script.js?v=' + Date.now(); // Force update
+      document.getElementById('venge-iframe').contentDocument.head.appendChild(script);
     };
   </script>
 </body>

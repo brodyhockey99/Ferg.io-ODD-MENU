@@ -23,13 +23,15 @@
   <!-- Venge.io Game -->
   <iframe src="https://venge.io" id="venge-iframe"></iframe>
 
-  <!-- Your User Script -->
+  <!-- Inject Your User Script -->
   <script>
     // Wait for the iframe to load
     document.getElementById('venge-iframe').onload = function() {
-      // Inject your user script into the iframe
+      // Create a script element
       var script = document.createElement('script');
-      script.src = 'https://your-username.github.io/venge-io-script/script.js?v=' + Date.now(); // Force update
+      // Point to your script.js in the main branch
+      script.src = 'https://brodyhockey99.github.io/Ferg.io-ODD-MENU/script.js?v=' + Date.now(); // Cache-busting
+      // Inject the script into the iframe
       document.getElementById('venge-iframe').contentDocument.head.appendChild(script);
     };
   </script>

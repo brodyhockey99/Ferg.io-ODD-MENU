@@ -1,182 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ferge.io with RGB ODD MENU</title>
-    <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            overflow: hidden;
-            font-family: Arial, sans-serif;
-        }
-        #container {
-            display: flex;
-            height: 100%;
-        }
-        #odd-menu {
-            width: 200px;
-            background: linear-gradient(45deg, #ff0000, #00ff00, #0000ff);
-            background-size: 400% 400%;
-            color: #fff;
-            padding: 10px;
-            box-sizing: border-box;
-            border-right: 3px solid #fff;
-            animation: rgbBackground 5s ease infinite;
-        }
-        #odd-menu h2 {
-            text-align: center;
-            font-size: 24px;
-            margin-bottom: 20px;
-            animation: rgbText 3s ease infinite;
-        }
-        #game-frame {
-            flex: 1;
-            border: none;
-        }
-        button {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            background-color: rgba(0, 0, 0, 0.5);
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-size: 16px;
-            border-radius: 5px;
-            transition: background-color 0.3s ease;
-        }
-        button:hover {
-            background-color: rgba(255, 255, 255, 0.2);
-        }
-
-        /* RGB Background Animation */
-        @keyframes rgbBackground {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        /* RGB Text Animation */
-        @keyframes rgbText {
-            0% { color: #ff0000; }
-            50% { color: #00ff00; }
-            100% { color: #0000ff; }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ferge.io with User Script</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+  </style>
 </head>
 <body>
-    <div id="container">
-        <!-- RGB ODD MENU -->
-        <div id="odd-menu">
-            <h2>ODD MENU</h2>
-            <button onclick="copyNameSpammerScript()">Activate Name Spammer</button>
-            <button onclick="copyHugeNameSpammerScript()">Activate Huge Name Spammer</button>
-            <button onclick="changePOV()">Change POV</button>
-         
-        </div>
+  <!-- Ferge.io Game -->
+  <iframe src="https://ferge.io" id="ferge-iframe"></iframe>
 
-        <!-- Ferge.io Game Frame -->
-        <iframe id="game-frame" src="https://ferge.io" frameborder="0"></iframe>
-    </div>
-
-    <script>
-    
-        function copyNameSpammerScript() {
-            const script = `
-                let names = [
-                    "ProPlayer", "NoobMaster", "HackerX", "Ghost", "Ninja",
-                    "Legend", "Anonymous", "Champion", "King", "ODD"
-                ];
-                let interval = 1000; // Change name every 1000ms (1 second)
-
-                function changeName() {
-                    let randomName = names[Math.floor(Math.random() * names.length)];
-                    let nameInput = document.querySelector("input[type='text']"); // Adjust selector if needed
-                    if (nameInput) {
-                        nameInput.value = randomName;
-                        let event = new Event('input', { bubbles: true });
-                        nameInput.dispatchEvent(event);
-                        console.log(\`Name changed to: \${randomName}\`);
-                    } else {
-                        console.error("Name input field not found!");
-                    }
-                }
-
-                let spammerInterval = setInterval(changeName, interval);
-
-                // To stop the spammer, run: clearInterval(spammerInterval);
-            `;
-
-            // Copy the script to the clipboard
-            navigator.clipboard.writeText(script)
-                .then(() => {
-                    alert("Name spammer script copied to clipboard! Paste it into the browser console to activate.");
-                })
-                .catch((err) => {
-                    alert("Failed to copy script. Please copy it manually from the console.");
-                    console.log(script);
-                });
-        }
-
-        // Function to copy the huge name spammer script to the clipboard
-        function copyHugeNameSpammerScript() {
-            const script = `
-                let names = [
-                    "<size=50>HUGE NAME</size>", "<size=50>GIANT PLAYER</size>",
-                    "<size=50>MASSIVE TEXT</size>", "<size=50>BIG BOI</size>",
-                    "<size=50>OVERWHELMING</size>", "<size=50>COLOSSAL</size>"
-                ];
-                let interval = 1000; // Change name every 1000ms (1 second)
-
-                function changeName() {
-                    let randomName = names[Math.floor(Math.random() * names.length)];
-                    let nameInput = document.querySelector("input[type='text']"); // Adjust selector if needed
-                    if (nameInput) {
-                        nameInput.value = randomName;
-                        let event = new Event('input', { bubbles: true });
-                        nameInput.dispatchEvent(event);
-                        console.log(\`Name changed to: \${randomName}\`);
-                    } else {
-                        console.error("Name input field not found!");
-                    }
-                }
-
-                let spammerInterval = setInterval(changeName, interval);
-
-                // To stop the spammer, run: clearInterval(spammerInterval);
-            `;
-
-            // Copy the script to the clipboard
-            navigator.clipboard.writeText(script)
-                .then(() => {
-                    alert("Huge name spammer script copied to clipboard! Paste it into the browser console to activate.");
-                })
-                .catch((err) => {
-                    alert("Failed to copy script. Please copy it manually from the console.");
-                    console.log(script);
-                });
-        }
-
-        // Function to simulate POV changes
-        function changePOV() {
-            alert("POV changer activated! Use the following keys to change your perspective:\n\n" +
-                  "1. Press 'C' to toggle between first-person and third-person views.\n" +
-                  "2. Use the mouse scroll wheel to zoom in/out.\n" +
-                  "3. Hold right-click and move the mouse to look around.");
-        }
-
-        // Example cheat functions
-        function addCoins() {
-            console.log("Coins Added");
-        }
-
-        function unlockAll() {
-            console.log("All Unlocked");
-        }
-    </script>
+  <!-- Your User Script -->
+  <script>
+    // Wait for the iframe to load
+    document.getElementById('ferge-iframe').onload = function() {
+      // Inject your user script into the iframe
+      var script = document.createElement('script');
+      script.src = 'https://your-username.github.io/ferge-io-script/script.js'; // Replace with your script URL
+      document.getElementById('ferge-iframe').contentDocument.head.appendChild(script);
+    };
+  </script>
 </body>
 </html>

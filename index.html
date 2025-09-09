@@ -1,16 +1,15 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Diep.io with User Script</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Krunker.io Embed</title>
   <style>
     body, html {
       margin: 0;
       padding: 0;
-      width: 100%;
       height: 100%;
-      overflow: hidden;
+      background: #000;
     }
     iframe {
       width: 100%;
@@ -20,20 +19,6 @@
   </style>
 </head>
 <body>
-  <!-- Diep.io Game -->
-  <iframe src="https://diep.io/" id="diep-iframe"></iframe>
-
-  <!-- Inject Your User Script -->
-  <script>
-    // Wait for the iframe to load
-    document.getElementById('diep-iframe').onload = function() {
-      // Create a script element
-      var script = document.createElement('script');
-      // Point to your script.js in the main branch
-      script.src = 'https://brodyhockey99.github.io/Ferg.io-ODD-MENU/script.js?v=' + Date.now(); // Cache-busting
-      // Inject the script into the iframe
-      document.getElementById('diep-iframe').contentDocument.head.appendChild(script);
-    };
-  </script>
+  <iframe src="https://krunker.io/" allowfullscreen></iframe>
 </body>
 </html>

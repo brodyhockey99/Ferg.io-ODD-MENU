@@ -1,640 +1,613 @@
 // ==UserScript==
-// @name         Krunker.IO Aimbot & ESP
-// @namespace    http://tampermonkey.net/
-// @version      0.3.3
-// @description  Locks aim to the nearest player in krunker.io and shows players behind walls. Also shows a line between you and them.
-// @author       Zertalious (Zert)
+// @name         KrunkBot
+// @version      2019.05.11
+// @description  Aimbot, Unlimited Ammo, Auto Heal, ESP, Wall Hack, Unlimited Ammo...
+// @author       MR.Coder, adware free version by omercnet
+// @namespace MR.Coder
+// @updateURL    https://github.com/omercnet/KrunkBot/raw/master/krunkerhack.user.js
+// @downloadURL  https://github.com/omercnet/KrunkBot/raw/master/krunkerhack.user.js
 // @match        *://krunker.io/*
-// @match        *://browserfps.com/*
-// @exclude      *://krunker.io/social*
-// @exclude      *://krunker.io/editor*
-// @icon         https://www.google.com/s2/favicons?domain=krunker.io
-// @grant        none
+// @grant        GM_xmlhttpRequest
+// @require http://code.jquery.com/jquery-3.3.1.min.js
+// @require https://code.jquery.com/ui/1.12.0/jquery-ui.min.js
+// @require https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.0/jquery-confirm.min.js
 // @run-at       document-start
-// @require      https://unpkg.com/three@0.150.0/build/three.min.js
 // ==/UserScript==
- 
-const THREE = window.THREE;
-delete window.THREE;
- 
-const settings = {
-	aimbotEnabled: true, 
-	aimbotOnRightMouse: false,
-	espEnabled: true, 
-	espLines: true, 
-	wireframe: false
-};
- 
-const keyToSetting = {
-	KeyB: 'aimbotEnabled',
-	KeyL: 'aimbotOnRightMouse',  
-	KeyM: 'espEnabled', 
-	KeyN: 'espLines', 
-	KeyK: 'wireframe'
-};
- 
-const gui = createGUI();
- 
-let scene;
- 
-const x = {
-	window: window,
-	document: document,
-	querySelector: document.querySelector,
-	consoleLog: console.log,
-	ReflectApply: Reflect.apply,
-	ArrayPrototype: Array.prototype,
-	ArrayPush: Array.prototype.push,
-	ObjectPrototype: Object.prototype,
-	clearInterval: window.clearInterval,
-	setTimeout: window.setTimeout,
-	reToString: RegExp.prototype.toString,
-	indexOf: String.prototype.indexOf, 
-	requestAnimationFrame: window.requestAnimationFrame
-};
- 
-x.consoleLog( 'Waiting to inject...' );
- 
-const proxied = function ( object ) {
- 
-	// [native code]
- 
-	try {
- 
-		if ( typeof object === 'object' &&
-			typeof object.parent === 'object' &&
-			object.parent.type === 'Scene' &&
-			object.parent.name === 'Main' ) {
- 
-			x.consoleLog( 'Found Scene!' )
-			scene = object.parent;
-			x.ArrayPrototype.push = x.ArrayPush;
- 
-		}
- 
-	} catch ( error ) {}
- 
-	return x.ArrayPush.apply( this, arguments );
- 
+
+var OnOffMode;
+(function (OnOffMode) {
+    OnOffMode.On = "On";
+    OnOffMode.Off = "Off";
+})(OnOffMode || (OnOffMode = {}));
+
+class Module {
+    constructor() {
+        this.allStates = this.getAllModes();
+        this.currentModeIndex = this.allStates.indexOf(this.getInitialMode());
+    }
+    onModeChanged() {
+        // Let implementations override this if needed
+    }
+    onTick() {
+        // Let implementations override this if needed
+    }
+    getInitialMode() {
+        return this.allStates[0];
+    }
+    onKeyPressed() {
+        this.currentModeIndex++;
+        if (this.currentModeIndex >= this.allStates.length) {
+            this.currentModeIndex = 0;
+        }
+        this.onModeChanged();
+    }
+    isEnabled() {
+        return this.currentModeIndex !== 0;
+    }
+    getStatus() {
+        return this.allStates[this.currentModeIndex].toString();
+    }
+    getCurrentMode() {
+        return this.allStates[this.currentModeIndex];
+    }
 }
- 
-const tempVector = new THREE.Vector3();
- 
-const tempObject = new THREE.Object3D();
-tempObject.rotation.order = 'YXZ';
- 
-const geometry = new THREE.EdgesGeometry( new THREE.BoxGeometry( 5, 15, 5 ).translate( 0, 7.5, 0 ) );
- 
-const material = new THREE.RawShaderMaterial( {
-	vertexShader: `
- 
-	attribute vec3 position;
- 
-	uniform mat4 projectionMatrix;
-	uniform mat4 modelViewMatrix;
- 
-	void main() {
- 
-		gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-		gl_Position.z = 1.0;
- 
-	}
- 
-	`,
-	fragmentShader: `
- 
-	void main() {
- 
-		gl_FragColor = vec4( 1.0, 0.0, 0.0, 1.0 );
- 
-	}
- 
-	`
-} );
- 
-const line = new THREE.LineSegments( new THREE.BufferGeometry(), material );
- 
-line.frustumCulled = false;
- 
-const linePositions = new THREE.BufferAttribute( new Float32Array( 100 * 2 * 3 ), 3 );
-line.geometry.setAttribute( 'position', linePositions );
- 
-let injectTimer = null;
- 
-function animate() {
- 
-	x.requestAnimationFrame.call( x.window, animate );
- 
-	if ( ! scene && ! injectTimer ) {
- 
-		const el = x.querySelector.call( x.document, '#loadingBg' );
- 
-		if ( el && el.style.display === 'none' ) {
- 
-			x.consoleLog( 'Inject timer started!' );
- 
-			injectTimer = x.setTimeout.call( x.window, () => {
- 
-				x.consoleLog( 'Injected!' );
-				x.ArrayPrototype.push = proxied;
- 
-			}, 2e3 );
- 
-		}
- 
-	}
- 
-	if ( scene === undefined || ! scene.children ) {
- 
-		return;
- 
-	}
- 
-	const players = [];
- 
-	let myPlayer;
- 
-	for ( let i = 0; i < scene.children.length; i ++ ) {
- 
-		const child = scene.children[ i ];
- 
-		if ( child.type === 'Object3D' ) {
- 
-			try {
- 
-				if ( child.children[ 0 ].children[ 0 ].type === 'PerspectiveCamera' ) {
- 
-					myPlayer = child;
- 
-				} else {
- 
-					players.push( child );
- 
-				}
- 
-			} catch ( err ) {}
- 
-		} else if ( child.material ) {
- 
-			child.material.wireframe = settings.wireframe;
- 
-		}
- 
-	}
- 
-	if ( ! myPlayer ) {
- 
-		x.consoleLog( 'Player not found, finding new scene.' );
-		x.ArrayPrototype.push = proxied;
-		return;
- 
-	}
- 
-	let counter = 0;
- 
-	let targetPlayer;
-	let minDistance = Infinity;
- 
-	tempObject.matrix.copy( myPlayer.matrix ).invert()
- 
-	for ( let i = 0; i < players.length; i ++ ) {
- 
-		const player = players[ i ];
- 
-		if ( ! player.box ) {
- 
-			const box = new THREE.LineSegments( geometry, material );
-			box.frustumCulled = false;
- 
-			player.add( box );
- 
-			player.box = box;
- 
-		}
- 
-		if ( player.position.x === myPlayer.position.x && player.position.z === myPlayer.position.z ) {
- 
-			player.box.visible = false;
- 
-			if ( line.parent !== player ) {
- 
-				player.add( line );
- 
-			}
- 
-			continue;
- 
-		}
- 
-		linePositions.setXYZ( counter ++, 0, 10, - 5 );
- 
-		tempVector.copy( player.position );
-		tempVector.y += 9;
-		tempVector.applyMatrix4( tempObject.matrix );
- 
-		linePositions.setXYZ(
-			counter ++,
-			tempVector.x,
-			tempVector.y,
-			tempVector.z
-		);
- 
-		player.visible = settings.espEnabled || player.visible;
-		player.box.visible = settings.espEnabled;
- 
-		const distance = player.position.distanceTo( myPlayer.position );
- 
-		if ( distance < minDistance ) {
- 
-			targetPlayer = player;
-			minDistance = distance;
- 
-		}
- 
-	}
- 
-	linePositions.needsUpdate = true;
-	line.geometry.setDrawRange( 0, counter );
- 
-	line.visible = settings.espLines;
- 
-	if ( settings.aimbotEnabled === false || ( settings.aimbotOnRightMouse && ! rightMouseDown ) || targetPlayer === undefined ) {
- 
-		return;
- 
-	}
- 
-	tempVector.setScalar( 0 );
- 
-	targetPlayer.children[ 0 ].children[ 0 ].localToWorld( tempVector );
- 
-	tempObject.position.copy( myPlayer.position );
- 
-	tempObject.lookAt( tempVector );
- 
-	myPlayer.children[ 0 ].rotation.x = - tempObject.rotation.x;
-	myPlayer.rotation.y = tempObject.rotation.y + Math.PI;
- 
+
+var AimbotMode;
+(function (AimbotMode) {
+    AimbotMode.Off = "Off";
+    AimbotMode.Quickscoper = "Quickscoper";
+    AimbotMode.OnRMB = "On RMB";
+})(AimbotMode || (AimbotMode = {}));
+
+class Aimbot extends Module {
+    constructor() {
+        super(...arguments);
+        this.scopingOut = false;
+        this.canShoot = true;
+    }
+    getName() {
+        return 'Aimbot';
+    }
+    getKey() {
+        return 'I';
+    }
+    getAllModes() {
+        return [AimbotMode.Off, AimbotMode.Quickscoper, AimbotMode.OnRMB];
+    }
+    getInitialMode() {
+        return AimbotMode.OnRMB;
+    }
+    onTick() {
+        if (!this.players) {
+            return;
+        }
+        const possibleTargets = this.players
+            .filter(player => {
+                return player.active && player.inView && !player.isYou && (!player.team || player.team !== this.me.team);
+            })
+            .sort((p1, p2) => this.distance(this.me, p1) - this.distance(this.me, p2));
+        let isLockedOn = false;
+        if (possibleTargets.length > 0) {
+            const target = possibleTargets[0];
+            switch (this.getCurrentMode()) {
+            case AimbotMode.Quickscoper:
+                isLockedOn = this.runQuickscoper(target);
+                break;
+            case AimbotMode.OnRMB:
+                isLockedOn = this.runOnRMB(target);
+                break;
+            }
+        }
+        if (!isLockedOn) {
+            this.control.camLookAt(null);
+            this.control.target = null;
+            if (this.getCurrentMode() === AimbotMode.Quickscoper) {
+                this.control.mouseDownL = 0;
+                this.control.mouseDownR = 0;
+            }
+        }
+    }
+    runQuickscoper(target) {
+        if (this.me.didShoot) {
+            this.canShoot = false;
+            setTimeout(() => {
+                this.canShoot = true;
+            }, this.me.weapon.rate);
+        }
+        if (this.control.mouseDownL === 1) {
+            this.control.mouseDownL = 0;
+            this.control.mouseDownR = 0;
+            this.scopingOut = true;
+        }
+        if (this.me.aimVal === 1) {
+            this.scopingOut = false;
+        }
+        if (this.scopingOut || !this.canShoot || this.me.recoilForce > 0.01) {
+            return false;
+        }
+        this.lookAt(target);
+        if (this.control.mouseDownR === 0) {
+            this.control.mouseDownR = 1;
+        } else if (this.me.aimVal < 0.2) {
+            this.control.mouseDownL = 1 - this.control.mouseDownL;
+        }
+        return true;
+    }
+    runOnRMB(target) {
+        if (this.control.mouseDownR === 0) {
+            return false;
+        }
+        this.lookAt(target);
+        return true;
+    }
+    lookAt(target) {
+        this.control.camLookAt(target.x2, target.y2 + target.height - 1.5 - 2.5 * target.crouchVal - this.me.recoilAnimY * 0.3 * 25, target.z2);
+    }
+    distance(player1, player2) {
+        const dx = player1.x - player2.x;
+        const dy = player1.y - player2.y;
+        const dz = player1.z - player2.z;
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
 }
- 
-const el = document.createElement( 'div' );
- 
-el.innerHTML = `<style>
- 
-.dialog {
-	position: absolute;
-	left: 50%;
-	top: 50%;
-	padding: 20px;
-	background: rgba(0, 0, 0, 0.8);
-	border: 6px solid rgba(0, 0, 0, 0.2);
-	color: #fff;
-	transform: translate(-50%, -50%);
-	text-align: center;
-	z-index: 999999;
+
+var BHopMode;
+(function (BHopMode) {
+    BHopMode.Off = "Off";
+    BHopMode.Jump = "Jump";
+    BHopMode.SlideJump = "Slide Jump";
+})(BHopMode || (BHopMode = {}));
+class AutoBHop extends Module {
+    constructor() {
+        super(...arguments);
+        this.isSliding = false;
+    }
+    getName() {
+        return 'Auto BHop';
+    }
+    getKey() {
+        return 'B';
+    }
+    getAllModes() {
+        return [BHopMode.Off, BHopMode.Jump, BHopMode.SlideJump];
+    }
+    onTick() {
+        this.control.keys[32] = !this.control.keys[32];
+        if (this.getCurrentMode() === BHopMode.SlideJump) {
+            if (this.isSliding) {
+                this.inputs[8] = 1;
+                return;
+            }
+            if (this.me.yVel < -0.04 && this.me.canSlide) {
+                this.isSliding = true;
+                setTimeout(() => {
+                    this.isSliding = false;
+                }, 350);
+                this.inputs[8] = 1;
+            }
+        }
+    }
 }
- 
-.dialog * {
-	color: #fff;
+
+class AutoReload extends Module {
+    getName() {
+        return 'Auto Reload';
+    }
+    getKey() {
+        return 'J';
+    }
+    getAllModes() {
+        return [OnOffMode.Off, OnOffMode.On];
+    }
+    getInitialMode() {
+        return OnOffMode.On;
+    }
+    onTick() {
+        if (this.me.ammos[this.me.weaponIndex] === 0) {
+            this.inputs[9] = 1;
+        }
+    }
 }
- 
-.close {
-	position: absolute;
-	right: 5px;
-	top: 5px;
-	width: 20px;
-	height: 20px;
-	opacity: 0.5;
-	cursor: pointer;
+
+class WallHack extends Module {
+    getName() {
+        return 'Wall Hack';
+    }
+    getKey() {
+        return 'O';
+    }
+    getAllModes() {
+        return [OnOffMode.Off, OnOffMode.On];
+    }
+    getInitialMode() {
+        unsafeWindow.wallHackEnabled = true;
+        return OnOffMode.On;
+    }
+    onModeChanged() {
+        unsafeWindow.wallHackEnabled = this.getCurrentMode() === OnOffMode.On;
+    }
 }
- 
-.close:before, .close:after {
-	content: ' ';
-	position: absolute;
-	left: 50%;
-	top: 50%;
-	width: 100%;
-	height: 20%;
-	transform: translate(-50%, -50%) rotate(-45deg);
-	background: #fff;
+
+class Menu extends Module {
+    getName() {
+        return 'Menu Visible';
+    }
+    getKey() {
+        return 'M';
+    }
+    getAllModes() {
+        return [OnOffMode.Off, OnOffMode.On];
+    }
+    getInitialMode() {
+        return OnOffMode.On;
+    }
+    onModeChanged() {
+        if (this.getCurrentMode() === OnOffMode.On) {
+            $("#krunkbotInfoBox").show()
+        } else {
+            $("#krunkbotInfoBox").hide()
+        }
+    }
 }
- 
-.close:after {
-	transform: translate(-50%, -50%) rotate(45deg);
+
+class NoRecoil extends Module {
+    getName() {
+        return 'No Recoil';
+    }
+    getKey() {
+        return 'G';
+    }
+    getAllModes() {
+        return [OnOffMode.Off, OnOffMode.On];
+    }
+    getInitialMode() {
+        return OnOffMode.Off;
+    }
+    onTick() {
+        this.me.recoilAnimYOld = this.me.recoilAnimY;
+        this.me.recoilAnimY = 0;
+    }
 }
- 
-.close:hover {
-	opacity: 1;
+
+class UnlimitedAmmo extends Module {
+    getName() {
+        return 'Unlimited Ammo';
+    }
+    getKey() {
+        return 'L';
+    }
+    getAllModes() {
+        return [OnOffMode.Off, OnOffMode.On];
+    }
+    getInitialMode() {
+        return OnOffMode.Off;
+    }
+    onTick() {
+        this.me.ammos[this.me.weaponIndex]=101
+    }
 }
- 
-.btn {
-	cursor: pointer;
-	padding: 0.5em;
-	background: red;
-	border: 3px solid rgba(0, 0, 0, 0.2);
+
+
+class AutoWeaponSwap extends Module {
+    getName() {
+        return 'Auto Weapon Swap';
+    }
+    getKey() {
+        return 'H';
+    }
+    getAllModes() {
+        return [OnOffMode.Off, OnOffMode.On];
+    }
+    getInitialMode() {
+        return OnOffMode.Off;
+    }
+    onTick() {
+if (this.me.ammos[this.me.weaponIndex] === 0 && this.me.ammos[0] != this.me.ammos[1]) {
+            this.inputs[10] = -1
+        }
+    }
 }
- 
-.btn:active {
-	transform: scale(0.8);
+
+
+class Krunkbot {
+    constructor() {
+        this.modules = [];
+    }
+    init() {
+        this.modules.push(new Aimbot());
+        this.modules.push(new AutoReload());
+        this.modules.push(new UnlimitedAmmo());
+        this.modules.push(new AutoWeaponSwap());
+        this.modules.push(new NoRecoil());
+        this.modules.push(new WallHack());
+        this.modules.push(new AutoBHop());
+        this.modules.push(new Menu());
+        const initInfoBoxInterval = setInterval(() => {
+            if (this.canInjectInfoBox()) {
+                clearInterval(initInfoBoxInterval);
+                this.injectInfoBox();
+                this.updateInfoBox();
+            }
+        }, 100);
+    }
+    onTick(me, inputs) {
+        this.modules.forEach(module => {
+            if (module.isEnabled()) {
+                module.me = me;
+                module.inputs = inputs;
+                module.control = unsafeWindow.control;
+                module.players = unsafeWindow.players;
+                module.onTick();
+            }
+        });
+    }
+    onKeyPressed(e) {
+        let shouldUpdateInfoBox = false;
+        this.modules.forEach(module => {
+            if (module.getKey().toUpperCase() === e.key.toUpperCase()) {
+                module.onKeyPressed();
+                shouldUpdateInfoBox = true;
+            }
+        });
+        if (shouldUpdateInfoBox) {
+            this.updateInfoBox();
+        }
+    }
+    updateInfoBox() {
+        const infoBox = unsafeWindow.document.querySelector('#krunkbotInfoBox');
+        if (infoBox === null) {
+            return;
+        }
+        const moduleLines = this.modules.map(module => {
+            return `
+        <div class="leaderItem">
+          <div class="leaderNameF">[${module.getKey().toUpperCase()}] ${module.getName()}</div>
+          <div class="leaderScore">${module.getStatus()}</div>
+        </div>
+      `;
+        });
+        infoBox.innerHTML = `
+      <div class="krunkbotTitle">Krunkbot</div>
+      ${moduleLines.join('')}
+    `.trim();
+    }
+    injectInfoBox() {
+        const infoBox = unsafeWindow.document.createElement('div');
+        infoBox.innerHTML = `
+      <div>
+        <style>
+          #krunkbotInfoBox {
+            text-align: left;
+            width: 310px;
+            z-index: 3;
+            padding: 10px;
+            padding-left: 20px;
+            padding-right: 20px;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 25px;
+            margin-top: 20px;
+            background-color: rgba(0, 0, 0, 0.2);
+          }
+
+          #krunkbotInfoBox .krunkbotTitle {
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            color: #fff;
+            margin-top: 5px;
+            margin-bottom: 5px;
+          }
+
+          #krunkbotInfoBox .leaderItem {
+           font-size: 14px;
+          }
+        </style>
+
+        <div id="krunkbotInfoBox"></div>
+      </div>
+    `.trim();
+        const leaderDisplay = unsafeWindow.document.querySelector('#leaderDisplay');
+        leaderDisplay.parentNode.insertBefore(infoBox.firstChild, leaderDisplay.nextSibling);
+    }
+    canInjectInfoBox() {
+        return unsafeWindow.document.querySelector('#leaderDisplay') !== null;
+    }
 }
- 
-.msg {
-	position: absolute;
-	left: 10px;
-	bottom: 10px;
-	color: #fff;
-	background: rgba(0, 0, 0, 0.6);
-	font-weight: bolder;
-	padding: 15px;
-	animation: msg 0.5s forwards, msg 0.5s reverse forwards 3s;
-	z-index: 999999;
-	pointer-events: none;
+
+// tslint:disable no-console
+class Logger {
+    constructor(prefix) {
+        this.prefix = prefix;
+    }
+    log(...message) {
+        console.log(this.prefix, ...message);
+    }
+    error(...message) {
+        console.error(this.prefix, ...message);
+    }
+    crash(message) {
+        document.open();
+        document.write(`
+      <html lang="en">
+        <head>
+          <title>Krunkbot has crashed!</title>
+
+          <style>
+            .container {
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              -moz-transform: translateX(-50%) translateY(-50%);
+              -webkit-transform: translateX(-50%) translateY(-50%);
+              transform: translateX(-50%) translateY(-50%);
+              text-align: center;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+            }
+
+            .title {
+              font-size: 24px;
+              font-weight: bold;
+              margin-bottom: 5px;
+            }
+
+            .message {
+              font-size: 20px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="title">Krunkbot has crashed!</div>
+            <div class="message">Error message: ${message}</div>
+          </div>
+        </body>
+      </html>
+    `);
+        document.close();
+        throw new Error(`${this.prefix} ${message}`);
+    }
 }
- 
-@keyframes msg {
-	from {
-		transform: translate(-120%, 0);
-	}
- 
-	to {
-		transform: none;
-	}
+const logger = new Logger('[Krunkbot]');
+
+function applyPatch(script, method, regex, replacer) {
+    const newScript = script.replace(regex, replacer);
+    if (script === newScript) {
+        logger.crash(`${method} was not successful`);
+    }
+    return newScript;
 }
- 
-.zui {
-	position: fixed;
-	right: 10px;
-	top: 0;
-	z-index: 999;
-	display: flex;
-	flex-direction: column;
-	font-family: monospace;
-	font-size: 14px;
-	color: #fff;
-	width: 250px;
-	user-select: none;
-	border: 2px solid #000;
+
+function patchControl(script) {
+    return applyPatch(script, 'patchControl', /var ([a-zA-Z0-9]+)=this,([a-zA-Z0-9]+)=([a-zA-Z0-9]+)\.renderer\.domElement/, ($0, $1, $2, $3) => {
+        return `var ${$1} = window.control = this, ${$2} = ${$3}.renderer.domElement;`;
+    });
 }
- 
-.zui-item {
-	padding: 5px 8px;
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	background: #222;
-	cursor: pointer;
+
+function patchPlayers(script) {
+    return applyPatch(script, 'patchPlayers', /if\(this\.now/, 'window.players = this.players.list; if (this.now');
 }
- 
-.zui-item.text {
-	justify-content: center;
-	cursor: unset;
-	text-align: center;
-	background: #333;
+
+function patchOnTick(script) {
+    return applyPatch(script, 'patchOnTick', /,([a-zA-Z0-9]+)\.procInputs\(([a-zA-Z0-9]+)/, ($0, $1, $2) => {
+        return `, window.onTick(${$1}, ${$2}), ${$1}.procInputs(${$2}`;
+    });
 }
- 
-.zui-item:hover {
-	background: #333;
+
+function patchOnKeyPressed(script) {
+    return applyPatch(script, 'patchOnKeyPressed', /"keyup",function\(([a-zA-Z0-9]+)\){/, ($0, $1) => {
+        return `"keyup", function (${$1}) { if (document.activeElement !== chatInput) { window.onKeyPressed(${$1}); }`;
+    });
 }
- 
-.zui-item span {
-	color: #fff;
-	font-family: monospace;
-	font-size: 14px;
+
+function patchForAimbot(script) {
+    return applyPatch(script, 'patchForAimbot', /{if\(this\.target\){(.+)}},this.camLookAt=/, ($0, $1) => {
+        return `
+      {
+        if (this.target) {
+          this.object.rotation.y = this.target.yD;
+          this.pitchObject.rotation.x = this.target.xD;
+
+          const half = Math.PI / 2;
+          this.pitchObject.rotation.x = Math.max(-half, Math.min(half, this.pitchObject.rotation.x));
+
+          this.yDr = this.pitchObject.rotation.x % Math.PI;
+          this.xDr = this.object.rotation.y % Math.PI;
+
+          ${$1}
+        }
+      }, this.camLookAt =
+    `;
+    });
 }
- 
-.zui-header {
-	background: #000;
+
+function patchForWallHack(script) {
+    return applyPatch(script, 'patchForWallHack', /if\(([a-zA-Z0-9]+)\.inView\){(.+)}else ([a-zA-Z0-9]+)\.style\.display="none"}var ([a-zA-Z0-9]+);/, ($0, $1, $2, $3, $4) => {
+        return `
+      if (${$1}.inView || window.wallHackEnabled) {
+        ${$2}
+      } else ${$3}.style.display = "none"
+      } var ${$4};
+    `;
+    });
 }
- 
-.zui-header span {
-	font-size: 16px;
+
+function patchIsHacker(script) {
+    return applyPatch(script, 'patchIsHacker', /&&([a-zA-Z0-9]+)\.isHacker&&/, `&& 1 === 0 &&`);
 }
- 
-.zui-header:hover {
-	background: #000;
+
+function patchLastHack(script) {
+    return applyPatch(script, 'patchIsHacker', /&&([a-zA-Z0-9]+)\.lastHack&&/, `&& 1 === 0 &&`);
 }
- 
-.zui-on {
-	color: green;
+
+function patchServerSearch(script) {
+    return applyPatch(script, 'patchServerSearch', /([a-zA-Z0-9]+)\.data\.([a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+)\.toLowerCase/, ($0, $1, $2) => {
+        return `(${$1}.data.${$2} || '').toLowerCase`;
+    });
 }
- 
-.zui-item-value {
-	font-size: 0.8em;
+
+function patchStyleErrors(script) {
+    return applyPatch(script, 'patchStyleErrors', /else document\.getElementById\("healthBarE"\+([a-zA-Z0-9]+)\)\.style\.width=([a-zA-Z0-9]+)\+"%"/, ($0, $1, $2) => {
+        return `else (document.getElementById("healthBarE" + ${$1}) || { style: {} }).style.width = ${$2} + "%"`;
+    });
 }
- 
-.zui-content .zui-item-value {
-	font-weight: bolder;
+
+function patchGameScript(script) {
+    logger.log('Patching the game script...');
+    script = patchControl(script);
+    script = patchPlayers(script);
+    script = patchOnTick(script);
+    script = patchOnKeyPressed(script);
+    script = patchForAimbot(script);
+    script = patchForWallHack(script);
+    script = patchIsHacker(script);
+    script = patchLastHack(script);
+    script = patchServerSearch(script);
+    script = patchStyleErrors(script);
+    logger.log('Successfully patched the game script!');
+    return script;
 }
- 
-</style>
-<div class="msg" style="display: none;"></div>
-<div class="dialog">${`<div class="close" onclick="this.parentNode.style.display='none';"></div>
-	<big>== Aimbot & ESP ==</big>
-	<br>
-	<br>
-	[B] to toggle aimbot
-	<br>
-	[V] to toggle ESP
-	<br>
-	[N] to toggle ESP Lines
-	<br>
-	[L] to toggle aimbot on <br>right mouse hold
-	<br>
-	[H] to show/hide help
-	<br>
-	<br>
-	By Zertalious
-	<br>
-	<br>
-	<div style="display: grid; grid-template-columns: 1fr 1fr; grid-gap: 5px;">
-		<div class="btn" onclick="window.open('https://discord.gg/K24Zxy88VM', '_blank')">Discord</div>
-		<div class="btn" onclick="window.open('https://www.instagram.com/zertalious/', '_blank')">Instagram</div>
-		<div class="btn" onclick="window.open('https://twitter.com/Zertalious', '_blank')">Twitter</div>
-		<div class="btn" onclick="window.open('https://greasyfork.org/en/users/662330-zertalious', '_blank')">More scripts</div>
-	</div>
-	` }
-</div>`;
- 
-const msgEl = el.querySelector( '.msg' );
-const dialogEl = el.querySelector( '.dialog' );
- 
-window.addEventListener( 'DOMContentLoaded', function () {
- 
-	while ( el.children.length > 0 ) {
- 
-		document.body.appendChild( el.children[ 0 ] );
- 
-	}
- 
-	document.body.appendChild( gui );
- 
-} );
- 
-let rightMouseDown = false;
- 
-function handleMouse( event ) {
- 
-	if ( event.button === 2 ) {
- 
-		rightMouseDown = event.type === 'pointerdown' ? true : false;
- 
-	}
- 
+
+function request(url) {
+    return new Promise(resolve => {
+        logger.log(`Retrieving ${url}`);
+        GM_xmlhttpRequest({
+            url,
+            method: 'GET',
+            onload: response => resolve(response.responseText),
+        });
+    });
 }
- 
-window.addEventListener( 'pointerdown', handleMouse );
-window.addEventListener( 'pointerup', handleMouse );
- 
-window.addEventListener( 'keyup', function ( event ) {
- 
-	if ( x.document.activeElement && x.document.activeElement.value !== undefined ) return;
- 
-	if ( keyToSetting[ event.code ] ) {
- 
-		toggleSetting( keyToSetting[ event.code ] );
- 
-	}
- 
-	switch ( event.code ) {
- 
-		case 'Slash' :
-			toggleElementVisibility( gui );
-			break;
- 
-		case 'KeyH' :
-			toggleElementVisibility( dialogEl );
-			break;
- 
-	}
- 
-} );
- 
-function toggleElementVisibility( el ) {
- 
-	el.style.display = el.style.display === '' ? 'none' : '';
- 
+
+function replaceRemoteScriptWithInline(html, partialSrc, script) {
+    const inline = `<script type="text/javascript">${script}</script>`;
+    const regExp = new RegExp(`<script src="[^"]*${partialSrc}[^"]*"></script>`);
+    const withoutScriptTag = html.replace(regExp, '');
+    return withoutScriptTag + inline;
 }
- 
-function showMsg( name, bool ) {
- 
-	msgEl.innerText = name + ': ' + ( bool ? 'ON' : 'OFF' );
- 
-	msgEl.style.display = 'none';
-	void msgEl.offsetWidth;
-	msgEl.style.display = '';
- 
-}
- 
-animate();
- 
-function createGUI() {
- 
-	const guiEl = fromHtml( `<div class="zui">
-		<div class="zui-item zui-header">
-			<span>[/] Controls</span>
-			<span class="zui-item-value">[close]</span>
-		</div>
-		<div class="zui-content"></div>
-	</div>` );
- 
-	const headerEl = guiEl.querySelector( '.zui-header' );
-	const contentEl = guiEl.querySelector( '.zui-content' );
-	const headerStatusEl = guiEl.querySelector( '.zui-item-value' );
- 
-	headerEl.onclick = function () {
- 
-		const isHidden = contentEl.style.display === 'none';
- 
-		contentEl.style.display = isHidden ? '' : 'none';
-		headerStatusEl.innerText = isHidden ? '[close]' : '[open]';
- 
-	}
- 
-	const settingToKey = {};
-	for ( const key in keyToSetting ) {
- 
-		settingToKey[ keyToSetting[ key ] ] = key;
- 
-	}
- 
-	for ( const prop in settings ) {
- 
-		let name = fromCamel( prop );
-		let shortKey = settingToKey[ prop ];
- 
-		if ( shortKey ) {
- 
-			if ( shortKey.startsWith( 'Key' ) ) shortKey = shortKey.slice( 3 );
-			name = `[${shortKey}] ${name}`;
- 
-		}
- 
-		const itemEl = fromHtml( `<div class="zui-item">
-			<span>${name}</span>
-			<span class="zui-item-value"></span>
-		</div>` );
-		const valueEl = itemEl.querySelector( '.zui-item-value' );
- 
-		function updateValueEl() {
- 
-			const value = settings[ prop ];
-			valueEl.innerText = value ? 'ON' : 'OFF';
-			valueEl.style.color = value ? 'green' : 'red';
- 
-		}
-		itemEl.onclick = function() {
- 
-			settings[ prop ] = ! settings[ prop ];
- 
-		}
-		updateValueEl();
- 
-		contentEl.appendChild( itemEl );
- 
-		const p = `__${prop}`;
-		settings[ p ] = settings[ prop ];
-		Object.defineProperty( settings, prop, {
-			get() {
- 
-				return this[ p ];
- 
-			}, 
-			set( value ) {
- 
-				this[ p ] = value;
-				updateValueEl();
- 
-			}
-		} );
- 
-	}
- 
-	contentEl.appendChild( fromHtml( `<div class="zui-item text">
-		<span>Created by Zertalious!</span>
-	</div>` ) );
- 
-	return guiEl;
- 
-}
- 
-function fromCamel( text ) {
- 
-	const result = text.replace( /([A-Z])/g, ' $1' );
-	return result.charAt( 0 ).toUpperCase() + result.slice( 1 );
- 
-}
- 
-function fromHtml( html ) {
- 
-	const div = document.createElement( 'div' );
-	div.innerHTML = html;
-	return div.children[ 0 ];
- 
-}
- 
-function toggleSetting( key ) {
- 
-	settings[ key ] = ! settings[ key ];
-	showMsg( fromCamel( key ), settings[ key ] );
- 
-}
+async function inlineRemoteScript(html, partialSrc) {
+    const regExp = new RegExp(`<script src="([^"]*)${partialSrc}([^"]*)"></script>`);
+    const [, prefix, suffix] = regExp.exec(html);
+    const script = await request(prefix + partialSrc + suffix);
+    return replaceRemoteScriptWithInline(html, partialSrc, script);
+}(async () => {
+    if (unsafeWindow.navigator.userAgent.includes('Firefox')) {
+        alert('Krunkbot does not work on Firefox.');
+        return;
+    }
+    window.stop();
+    logger.log('Loading Krunkbot...');
+    let newHtml = await request(document.location.href);
+    const gameScriptHash = /game\.([^\.]+)\.js/.exec(newHtml)[1];
+    const gameScript = await request(`https://krunker.io/js/game.${gameScriptHash}.js`);
+    newHtml = await inlineRemoteScript(newHtml, 'libs/zip.js');
+    newHtml = await inlineRemoteScript(newHtml, 'libs/zip-ext.js');
+    newHtml = replaceRemoteScriptWithInline(newHtml, 'js/game', patchGameScript(gameScript));
+    const bot = new Krunkbot();
+    bot.init();
+    unsafeWindow.onTick = (me, inputs) => bot.onTick(me, inputs);
+    unsafeWindow.onKeyPressed = (e) => bot.onKeyPressed(e);
+    document.open();
+    document.write(newHtml);
+    document.close();
+    logger.log('Successfully loaded Krunkbot!');
+})();
